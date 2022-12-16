@@ -27,6 +27,13 @@ namespace UcitCalibrate
 		double Height;
 	};
 
+	struct AIOradarCoord
+	{
+		double X;
+		double Y;
+		double Z;
+	};
+
 	
 
 	struct RadarSpeed
@@ -121,19 +128,27 @@ namespace UcitCalibrate
 			std::vector<double>& height, \
 			std::vector<cv::Point3d> &Gpsworld4radar);
 
-		// gps坐标转世界坐标系，不计算高度的，存到calibratetool 成员里面
+		// gps坐标转世界坐标系，不计算高度的，存到calibratetool 成员里面，为标camera做准备
 		void Gps2WorldCoord(std::vector<double> P1_lo, std::vector<double> P1_la, std::vector<double>& m_gpsheights);
 		void WorldCoord2Gps(std::vector<longandlat> &m_longandlat,std::vector<GpsWorldCoord> &m_gpsworld);
+
+
+
 		void radarworld2Gps(GpsWorldCoord &m_gpsworldcoord, longandlat &m_gpslongandlat); 
 		void Gps2radarworld(longandlat& m_gpslongandlat, GpsWorldCoord& m_gpsworldcoord);
 		void CameraPixel2World(cv::Point2d m_pixels, cv::Point3d &m_world);
 		void CameraPixel2Gps(cv::Point2d m_pixels, longandlat& m_longandlat);
 
-
+		// AIO 像素到雷达
+		void AIOcamerapixel2Radar(cv::Point2d m_pixels, AIOradarCoord &Radarvalue);
+		void AIORadar2camerapixel(AIOradarCoord Radarvalue, cv::Point2d &m_pixels);
 
 		// pixel 折算到3*1的距离值, 1: camerapixel points 2：输出x,y,z值，计算像素到雷达坐标系
 		void Pixel2Distance31(cv::Point2d pixels, WorldDistance &Distances);
 		void Distance312Pixel(WorldDistance Distances, cv::Point2d& pixels);
+
+		// 
+
 
 		void Gps2Pixel(GpsWorldCoord &m_gpscoord, cv::Point2d &pixels);
 
@@ -143,11 +158,17 @@ namespace UcitCalibrate
 		std::vector<cv::Point3d> GetWorldBoxPoints(); 
 		// choose selected points for calibration
 		void PickRawGPSPoints4VectorPairs(std::vector<unsigned int> pointsSet, std::map<int, double>&Gps_longtitude, std::map<int, double>&Gps_latitudes);
-		void PickMeasureMentValue4RadarRT(std::vector<unsigned int> pointsSet, std::map<int, cv::Point3d> &measurements);
+		void PickMeasureMentValue4AIOcalib(std::vector<unsigned int> pointsSet, std::map<int, cv::Point3d> &measurements);
+		
+		void PickRadarMeasure4MECcalibRadarRT(std::vector<unsigned int> pointsSet, \
+			std::map<int, cv::Point3d>& measurements);
+		
+		
 		void PickImagePixelPoints4PnPsolve(std::vector<unsigned int>pointsSet, std::map<int, cv::Point2d>& imagesPixel);
 		
 		std::vector<cv::Point3d> GetMeasureMentPoint();
-		void CalibrateCamera(bool rasac,bool useRTK, std::vector<unsigned int> pickPoints);
+		void CalibrateCamera(bool rasac, std::string &mode, std::vector<unsigned int> pickPoints);
+
 		void SetPi(double pai);
 		double rad(double d);
 		double deg(double x);
@@ -182,9 +203,17 @@ namespace UcitCalibrate
 		bool SetCameraTMatrix(cv::Mat CTmatrix);
 
 		std::vector<cv::Point3d> m_worldBoxPoints;
+		// calibrate for AIO 
+		std::vector<cv::Point2d> baseRadarPoints;
+
 		std::vector<double> gps_longPick;
 		std::vector<double> gps_latiPick;
+		// measures_pick used for AIO calibrate
 		std::vector<cv::Point3d> measures_pick;
+
+		std::vector<cv::Point3d> radarmeasure_pick4radarRT;
+
+
 		std::vector<cv::Point2f> imagePixel_pick;
 		cv::Mat  m_cameraRMatrix;
 		cv::Mat m_cameraRMatrix33;

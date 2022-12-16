@@ -25,7 +25,7 @@ using namespace UcitCalibrate;
 
 
 #define project2pixeltest 1
-#define project2gpstest 1
+#define project2gpstest 0
 
 #define ManMade	0
 
@@ -334,99 +334,24 @@ int writeXmlFile(cv::Mat *raderRT44,
 }
 
 
-
-
-int main_02()
+int main(int argc, char ** argv)
 {
-	printf("计算camera calibration for centernet \n");
-	ofstream outfile("ret.txt", ios::trunc);
-	std::string m_calixml = "shenwucalib.xml";
-	cv::Mat m_rt44, m_crt44, m_crt33, m_crt31;
+	// 命令行输入
 
-	longandlat originallpoll;
-	std::vector<double> m_ghostdis;
-	cv::Mat camrainst;
-	double shouchigao;
-	double radargaodu;
-	cv::Mat results = cv::Mat::zeros(3, 4, cv::DataType<double>::type);
-
-	CalibrationTool::getInstance().ReadCalibrateParam(m_calixml, m_rt44, m_crt44, results, m_crt33, m_crt31,
-		originallpoll, m_ghostdis, camrainst, shouchigao, radargaodu);
-	
-	
-
-	for (int i = 0; i < m_ghostdis.size(); i++)
-
+	if (argc < 2)
 	{
-		printf("dist %f \n", m_ghostdis[i]);
+		std::cout << "please input the mode of calibrate! for MEC or AIO" << std::endl;
+		return 0;
 	}
 
-	for (int i = 0; i < 3; i++)
+	std::string mode = "";
+	for (int  i = 0; i < argc; i++)
 	{
-		for (int j = 0; j < 3; j++)
-		{
-			double value = camrainst.at<double>(i, j);
-			printf("instrinc values:[%.16f] \n", value);
-		}
+		mode = argv[i];
 	}
-	for (int i = 0; i < 4; i++)
-	{
-		for (int j = 0; j < 4; j++)
-		{
-			double value = m_rt44.at<double>(i, j);
-			printf("rader44 values:[%.16f] \n", value);
-		}
-	}
-
-	for (int i = 0; i < 4; i++)
-	{
-		for (int j = 0; j < 4; j++)
-		{
-			double value = m_crt44.at<double>(i, j);
-			printf("camera34 values:[%.16f] \n", value);
-		}
-	}
-
-	for (int i = 0; i < 3; i++)
-	{
-		for (int j = 0; j < 3; j++)
-		{
-			double value = m_crt33.at<double>(i, j);
-			printf("camera33 values:[%.16f] \n", value);
-		}
-	}
+	printf("mode is %s \n", mode.c_str());
 
 
-	for (int i = 0; i < 3; i++)
-	{
-		for (int j = 0; j < 1; j++)
-		{
-			double value = m_crt31.at<double>(i, j);
-			printf("camera31 values:[%.16f] \n", value);
-		}
-	}
-	// 测试转eigen
-		
-	std::cout << "instrinct:" << camrainst << std::endl;
-	std::cout << "results:" << results << std::endl;
-
-	cv::Mat ret = camrainst * results;
-	std::cout << "ret" << ret << std::endl;
-	outfile << ret << std::endl;
-	outfile.close();
-	system("PAUSE");
-	return 0;
-}
-
-
-
-
-
-
-
-
-int main()
-{
 	////// 首先通过标定板的图像像素坐标以及对应的世界坐标，通过PnP求解相机的R&T//////
 	// 准备的是图像上的像素点
 	// 创建输出参数文件，ios：：trunc含义是有文件先删除
@@ -446,24 +371,14 @@ int main()
 
 	
 	CalibrationTool  &m_Calibrations = CalibrationTool::getInstance();
-	//CalibrationTool  &m_WholeCalibrations = CalibrationTool::getInstance();
-	// 设置挑选点
-	//vector<unsigned int> pickPointindex{1,2,3,4,5,6,7,8,9,10,11,12};
 	vector<unsigned int> pickPointindex;
 	bool rasac = false;
 
-
-	// dont change wholeindex
-	vector<unsigned int> wholeindex{ 1,2,3,4,5,6,7,8,9,10,11,12 };
+	
 	double reflectorheight,raderheight;
 	std::map<int, cv::Point3d> m_Measures;
 	vector<cv::Point2d> boxPoints, validPoints;
 	
-
-
-
-
-
 
 
 	struct meandistance
@@ -508,6 +423,8 @@ int main()
 		originallpoll, m_ghostdis, camrainst,gpsheight,calibrateplace);
 
 		int manPointsNum = 0;
+
+
 #if ManMade
 		cv::Point2d pixels1(1403.632, 375.81);
 		cv::Point2d pixels2(1516.587, 367.152);
@@ -550,79 +467,13 @@ int main()
 #endif
 	
 
-	
 
-#ifdef Readcalibratexml
-		cv::Mat m_rt44, m_crt44, m_crt33, m_crt31;
-		double radargaodu, shouchigao;
-		m_Calibrations.ReadCalibrateParam(m_calixml, m_rt44, m_crt44, m_crt33, m_crt31,
-			originallpoll, m_ghostdis, camrainst,shouchigao,radargaodu);
-
-		for (int i =0; i< m_ghostdis.size(); i++)
-		
-		{
-			printf("dist %f \n", m_ghostdis[i]);
-		}
-
-		for (int i = 0; i < 3; i++)
-		{
-			for (int j = 0; j < 3; j++)
-			{
-				double value = camrainst.at<double>(i, j);
-				printf("instrinc values:[%.16f] \n", value);
-			}
-		}
-		for (int i = 0; i < 4; i++)
-		{
-			for (int j = 0; j < 4; j++)
-			{
-				double value = m_rt44.at<double>(i, j);
-				printf("rader44 values:[%.16f] \n", value);
-			}
-		}
-
-		for (int i = 0; i < 4; i++)
-		{
-			for (int j = 0; j < 4; j++)
-			{
-				double value = m_crt44.at<double>(i, j);
-				printf("camera34 values:[%.16f] \n", value);
-			}
-		}
-
-		for (int i = 0; i < 3; i++)
-		{
-			for (int j = 0; j < 3; j++)
-			{
-				double value = m_crt33.at<double>(i, j);
-				printf("camera33 values:[%.16f] \n", value);
-			}
-		}
-
-
-		for (int i = 0; i < 3; i++)
-		{
-			for (int j = 0; j < 1; j++)
-			{
-				double value = m_crt31.at<double>(i, j);
-				printf("camera31 values:[%.16f] \n", value);
-			}
-		}
-		// 测试转eigen
-		Eigen::Matrix4d raderRT;
-		cv::cv2eigen(m_rt44, raderRT);
-#endif
-
-	
-
-	
 
 	//setpi
 	m_Calibrations.SetPi(CV_PI);
 
 	std::vector<CalibrationTool::BoxSize> mv_results;
 	m_Calibrations.PickImagePixelPoints4PnPsolve(pickPointindex, mp_images);
-	//m_WholeCalibrations.PickImagePixelPoints4PnPsolve(wholeindex, mp_images);
 
 	// Step one Loading image
 	cv::Mat sourceImage = cv::imread("../data/1.bmp");
@@ -670,60 +521,8 @@ int main()
 	
 	// pick points for calibration
 	m_Calibrations.PickRawGPSPoints4VectorPairs(pickPointindex, mp_Gpslong, mp_Gpslat);
-	//m_WholeCalibrations.PickRawGPSPoints4VectorPairs(wholeindex, mp_Gpslong, mp_Gpslat);
 
 	// gps convert to the world coordination
-	// 11号点的高度信息
-
-#ifdef point_11
-	double gps0_height = 200.500;
-	double point1_height = 200.591 - gps0_height;
-	double point2_height = 200.574 - gps0_height;
-	double point3_height = 200.476 - gps0_height;
-	double point4_height = 200.394 - gps0_height;
-	double point5_height = 200.305 - gps0_height;
-	double point6_height = 200.478 - gps0_height;
-	double point7_height = 200.576 - gps0_height;
-	double point8_height = 200.564 - gps0_height;
-	double point9_height = 200.591 - gps0_height;
-	double point10_height = 200.902 - gps0_height;
-	double point11_height = 200.935 - gps0_height;
-	double point12_height = 201.253 - gps0_height;
-	double point13_height = 201.403 - gps0_height;
-	double point14_height = 201.906 - gps0_height;
-	double point15_height = 201.750 - gps0_height;
-	double point16_height = 202.194 - gps0_height;
-	double point17_height = 202.359 - gps0_height;
-	double point18_height = 201.191 - gps0_height;
-	double point19_height = 201.947 - gps0_height;
-	double point20_height = 201.755 - gps0_height;
-	double point21_height = 201.089 - gps0_height;
-
-	//  11号点的高度
-	//gpsheight.push_back(point1_height);
-	//gpsheight.push_back(point2_height);
-	//gpsheight.push_back(point3_height);
-	//gpsheight.push_back(point4_height);
-	//gpsheight.push_back(point5_height);
-	//gpsheight.push_back(point6_height);
-	//gpsheight.push_back(point7_height);
-	//gpsheight.push_back(point8_height);
-	//gpsheight.push_back(point9_height);
-	//gpsheight.push_back(point10_height);
-	gpsheight.push_back(point11_height);
-	//gpsheight.push_back(point12_height);
-	/*gpsheight.push_back(point13_height);
-	gpsheight.push_back(point14_height);
-	gpsheight.push_back(point15_height);*/
-	//gpsheight.push_back(point16_height);
-	gpsheight.push_back(point17_height);
-	gpsheight.push_back(point18_height);
-	gpsheight.push_back(point19_height);
-	gpsheight.push_back(point20_height);
-	gpsheight.push_back(point21_height);
-
-
-#endif
 
 
 	// 最终选定的高程的点
@@ -735,25 +534,38 @@ int main()
 
 
 
-	m_Calibrations.Gps2WorldCoord(m_Calibrations.gps_longPick, m_Calibrations.gps_latiPick,gpsheights);
-	// 增加手持gps
+	if (strcmp(mode.c_str(), "MEC")==0)
+	{
+		printf("calibrate MEC now \n");
+		// 预备标定camera的世界坐标系的点
+		m_Calibrations.Gps2WorldCoord(m_Calibrations.gps_longPick, m_Calibrations.gps_latiPick, gpsheights);
+		// 增加手持gps
+	}
+	else if (strcmp(mode.c_str(), "AIO") == 0)
+	{
+		printf("calibrate AIO now \n");
+		
+	}
+	else
+	{
+		printf("please input the create mode, be carefull capital written!");
+		return 0;
+	}
+
+
 
 	
-
-	std::vector<cv::Point3d> Gpsworld4radarcalibrate;
+	 // 这个函数不知道干啥用的
+	/*std::vector<cv::Point3d> Gpsworld4radarcalibrate;
 	m_Calibrations.Generategps2world(m_Calibrations.gps_longPick,
 		m_Calibrations.gps_latiPick,
 		gpsheights,
-		Gpsworld4radarcalibrate);
+		Gpsworld4radarcalibrate);*/
 
 
 	m_Calibrations.SetWorldBoxPoints();
 
 
-	//Setting box corners in real world//////
-	vector<cv::Point3d> worldBoxPoints;  //存入世界坐标
-	vector<cv::Point3d> measurementPoint;
-	worldBoxPoints = m_Calibrations.GetWorldBoxPoints();
 
 	// 计算雷达的rt矩阵
 	// 用于反算雷达是否标定准确,以下的点是实测距离值，单位为米
@@ -763,43 +575,33 @@ int main()
 
 
 // 标定雷达的rt矩阵
-#ifdef calibrateradar
-	m_Calibrations.PickMeasureMentValue4RadarRT(pickPointindex, m_Measures);
-	// 计算雷达的rt矩阵
-	//cv::Mat RT = m_Calibrations.Get3DR_TransMatrix(m_Calibrations.GetMeasureMentPoint(), \
-		//m_Calibrations.GetWorldBoxPoints());
+	// 
 
-	cv::Mat RT = m_Calibrations.Get3DR_TransMatrix(m_Calibrations.GetMeasureMentPoint(), \
-		Gpsworld4radarcalibrate);
-
-	for (int r = 0; r < RT.rows; r++)
+	if (strcmp("AIO",mode.c_str())==0)
 	{
-		for (int c = 0; c < RT.cols; c++)
+		// 为标定AIO选定雷达原始测量值
+		m_Calibrations.PickMeasureMentValue4AIOcalib(pickPointindex, m_Measures);
+	}
+	else
+	{
+		CalibrationTool::getInstance().PickRadarMeasure4MECcalibRadarRT(pickPointindex, m_Measures);
+		// 计算雷达的rt矩阵
+		cv::Mat RT = m_Calibrations.Get3DR_TransMatrix(m_Calibrations.GetMeasureMentPoint(), \
+			m_Calibrations.GetWorldBoxPoints());
+
+		char* dt = ctime(&now);
+		cout << "本地日期和时间：" << dt << endl;
+		outfile << "Current Generate time: \n" << dt << endl;
+		for (int i = 0; i < pickPointindex.size(); ++i)
 		{
-			printf("Radar's RT Matrix:%f, ", RT.at<double>(r, c));
-
+			outfile << "Pick the Points:" << pickPointindex[i] << " for calibration" << endl;
 		}
-		printf("\n");
-	}
-	char* dt = ctime(&now);
-	cout << "本地日期和时间：" << dt << endl;
-	outfile << "Current Generate time: \n" << dt << endl;
-	for (int i = 0; i < pickPointindex.size(); ++i)
-	{
-		outfile << "Pick the Points:" << pickPointindex[i] << " for calibration" << endl;
-	}
-	outfile << "\n" << endl;
-	outfile << "it is a radar RT matrix first! \n" << endl;
-	outfile << RT << "\n\n" << endl;
+		outfile << "\n" << endl;
+		outfile << "it is a radar RT matrix first! \n" << endl;
+		outfile << RT << "\n\n" << endl;
 
+	}
 
-	printf("**************************************\n");
-	printf("**************************************\n");
-	printf("**************************************\n");
-	printf("**************************************\n");
-#endif
-	
-		
 	
 
 	// camera relevant 
@@ -826,91 +628,52 @@ int main()
 		cameradistort.at<double>(4, 0)
 	);
 	
-	
-	
-    // 获得世界坐标系到像素坐标系的R_T矩阵
-	 //////PnP solve R&T///////////////////////////////
-	cv::Mat rvec1(3, 1, cv::DataType<double>::type);  //旋转向量
-	cv::Mat tvec1(3, 1, cv::DataType<double>::type);  //平移向量
-
-
 
 
 	m_Calibrations.SetRadarHeight(reflectorheight);
 	m_Calibrations.SetCoordinateOriginPoint(originallpoll.longtitude, originallpoll.latitude);
-
-#ifndef calibrateradar
-	m_Calibrations.SetRadarRT44(m_rt44);
-#endif
-
-
-	bool useRTK = true;
-	m_Calibrations.CalibrateCamera(rasac, useRTK, pickPointindex);
-
-
-
-
-#ifdef readcalib
-	// 全是使用读取的参数写进去
-	m_Calibrations.SetRadarHeight(1.2);
-	m_Calibrations.SetRadarRT44(m_rt44);
-	m_Calibrations.SetCameraRT44(m_crt44);
-	m_Calibrations.SetCameraRT33(m_crt33);
-	m_Calibrations.SetCameraTMatrix(m_crt31);
-	m_Calibrations.SetCoordinateOriginPoint(originallpoll.longtitude, originallpoll.latitude);
-
-	
-
-#endif
-
-
-
-	
-
-
-	
-	
-
-		// gps 转化成世界坐标之后的点
-
-		cv::Mat m_gps2world = cv::Mat::ones(4, 1, cv::DataType<double>::type);
-	
-		//3D to 2D////////////////////////////
-		cv::Mat image_points = cv::Mat::ones(3, 1, cv::DataType<double>::type);
-		cv::Mat RT_;
-		hconcat(m_Calibrations.m_cameraRMatrix33, m_Calibrations.m_cameraTMatrix, RT_);
-		cout << "Image RT_" << RT_ << endl;
-		outfile << "it is an Image RT matrix then! \n\n" << endl;
-		outfile << RT_ <<"\n"<< endl;
-
-		outfile << "Rotate33:" << m_Calibrations.m_cameraRMatrix33<<"\n\n"<< endl;
-		outfile << "CameraTmatrix:" << m_Calibrations.m_cameraTMatrix << "\n" << endl;
-	
-		
-#ifdef writecalibratexml
+	m_Calibrations.CalibrateCamera(rasac, mode, pickPointindex);
 
 		double poll_lon, poll_lat;
 		poll_lon = originallpoll.longtitude;
 		poll_lat = originallpoll.latitude;
-		// generate xml files to store rt matrix
-#ifndef Readcalibratexml
-		
-		int flag = writeXmlFile(&RT, &RT_, &m_Calibrations.m_cameraRMatrix33, \
-			& m_Calibrations.m_cameraTMatrix,
-			poll_lon,poll_lat,&cameradistort,&camrainst,reflectorheight,raderheight,calibrateplace);
-#else
-		
-		int flag = writeXmlFile(&m_rt44, &RT_, &m_Calibrations.m_cameraRMatrix33, \
-			& m_Calibrations.m_cameraTMatrix, poll_lon, poll_lat, &cameradistort, &camrainst, \
-			reflectorheight, raderheight,calibrateplace);
-#endif
-		
-#endif
-		
+		// generate xml files 
 
+
+		cv::Mat tmpRadarRT = CalibrationTool::getInstance().GetRadarRTMatrix();
+		cv::Mat tmpCameraRT = CalibrationTool::getInstance().GetCameraRT44Matrix();
+		
+		int flag = writeXmlFile(&tmpRadarRT, \
+			& tmpCameraRT, &m_Calibrations.m_cameraRMatrix33, \
+			& m_Calibrations.m_cameraTMatrix, \
+			poll_lon,\
+			poll_lat,\
+			&cameradistort,\
+			&camrainst,\
+			reflectorheight,\
+			raderheight,\
+			calibrateplace);
+
+
+
+
+		// gps 转化成世界坐标之后的点
+
+		cv::Mat m_gps2world = cv::Mat::ones(4, 1, cv::DataType<double>::type);
+		cv::Mat m_AIOradarWorld = cv::Mat::ones(4, 1, cv::DataType<double>::type);
+
+
+
+		//3D to 2D////////////////////////////
+		cv::Mat image_points = cv::Mat::ones(3, 1, cv::DataType<double>::type);
+
+		meandistance recorddistance{ 0,0,0 };
+
+if(strcmp("MEC",mode.c_str())==0)
+{ 
 
 #if project2pixeltest
-		meandistance recorddistance{ 0,0,0 };
+		
 		// 反推12个点投影到pixel坐标,以下用新构造的点来计算,像素的值 红色
 		vector<cv::Point3d> m_fantuiceshi;
 		Gps2WorldCoord4test(6378245, reflectorheight, originallpoll, mp_Gpslong, mp_Gpslat, m_fantuiceshi);
@@ -922,7 +685,7 @@ int main()
 			m_gps2world.at<double>(1, 0) = iter->y;
 			// 预估gps测量时的z轴高度为1.2f
 			m_gps2world.at<double>(2, 0) = iter->z;
-			image_points = camrainst * RT_ * m_gps2world;
+			image_points = camrainst * CalibrationTool::getInstance().GetCameraRT44Matrix() * m_gps2world;
 			cv::Mat D_Points = cv::Mat::ones(3, 1, cv::DataType<double>::type);
 			D_Points.at<double>(0, 0) = image_points.at<double>(0, 0) / image_points.at<double>(2, 0);
 			D_Points.at<double>(1, 0) = image_points.at<double>(1, 0) / image_points.at<double>(2, 0);
@@ -1013,217 +776,254 @@ int main()
 
 
 #endif
-	
-#if  project2pixeltest
-
-		// 雷达反投影,应该也要先乘以雷达的逆矩阵
-		//  雷达坐标系返回的点是左正右负, 反投影雷达要加高度z，记住
-		std::vector<cv::Point2d> radarprojectpixle;
-		for (; iter_begin != iter_end; iter_begin++)
+}
+else
+{
+		// 验证AIO 投影反算
+		std::map<int, cv::Point3d>::iterator iter_radarM_begin = m_Measures.begin();
+		std::map<int, cv::Point3d>::iterator iter_radarM_end = m_Measures.end();
+		for (; iter_radarM_begin!=iter_radarM_end; iter_radarM_begin++)
 		{
-			cv::Point3d radartmp;
-			radartmp.x = iter_begin->second.x;
-			radartmp.y = iter_begin->second.y;
-			radartmp.z = iter_begin->second.z;
-			cv::Point2d radpixe;
+			// old functions
+			/*m_AIOradarWorld.at<double>(0, 0) = iter_radarM_begin->second.x;
+			m_AIOradarWorld.at<double>(1, 0) = iter_radarM_begin->second.y;
+			m_AIOradarWorld.at<double>(2, 0) = iter_radarM_begin->second.z;
+			image_points = camrainst * CalibrationTool::getInstance().GetCameraRT44Matrix() * m_AIOradarWorld;
+			cv::Mat D_Points = cv::Mat::ones(3, 1, cv::DataType<double>::type);
+			D_Points.at<double>(0, 0) = image_points.at<double>(0, 0) / image_points.at<double>(2, 0);
+			D_Points.at<double>(1, 0) = image_points.at<double>(1, 0) / image_points.at<double>(2, 0);
+			raderpixelPoints.x = D_Points.at<double>(0, 0);
+			raderpixelPoints.y = D_Points.at<double>(1, 0);*/
 
-			longandlat gpsresult;
-			GpsWorldCoord radar_input, radarworld;
-			radar_input.X = radartmp.x;
-			radar_input.Y = radartmp.y;
-			// input distance 有可能要修改
-			radar_input.Distance = 0;
-			// 反算雷达到gps
-			m_Calibrations.radarworld2Gps(radar_input, gpsresult);
-			printf("GPS:[%3.8f,%3.8f] \n", gpsresult.longtitude, gpsresult.latitude);
-			printf("GPS:[%3.8f,%3.8f] \n", gpsresult.longtitude, gpsresult.latitude);
-			printf("GPS:[%3.8f,%3.8f] \n", gpsresult.longtitude, gpsresult.latitude);
-
-			// 其实是为了得到雷达的Z，这绕了一步
-			m_Calibrations.Gps2radarworld(gpsresult, radarworld);
-
-			UcitCalibrate::WorldDistance radardistance;
-			radardistance.X = radarworld.X;
-			radardistance.Y = radarworld.Y;
-			radardistance.Height = radarworld.Distance;
-
-			m_Calibrations.Distance312Pixel(radardistance, radpixe);
-			cv::circle(sourceImage, radpixe, 8, cv::Scalar(0, 0, 100), -1, cv::LINE_8);
-			radarprojectpixle.push_back(radpixe);
+			AIOradarCoord radarworld;
+			radarworld.X = iter_radarM_begin->second.x;
+			radarworld.Y = iter_radarM_begin->second.y;
+			radarworld.Z = iter_radarM_begin->second.z;
+			cv::Point2d raderpixelPoints;
+			CalibrationTool::getInstance().AIORadar2camerapixel(radarworld, raderpixelPoints);
+			validPoints.push_back(raderpixelPoints);
+			std::string raders = "radarPoints";
+			cv::circle(sourceImage, raderpixelPoints, 6, cv::Scalar(0, 0, 255), -1, cv::LINE_AA);
 
 		}
-
-		char dayindir[256];
-		char prezifu[50];
-		//计算与真值的偏差
-		int Nonbiasnum = 0;
 		for (int i = 0; i < boxPoints.size(); i++)
 		{
-			dircs m_dirs = judgedirection(radarprojectpixle[i], boxPoints[i], 110);
-			if (strcmp(m_dirs.m_drirs.c_str(),"雷达返投点位不偏")!=0)
-			{
-				Nonbiasnum++;
-			}
-			recorddistance.radardistance = sqrt(pow((radarprojectpixle[i].x - boxPoints[i].x), 2) + pow((radarprojectpixle[i].y - boxPoints[i].y), 2));
-			error_means[i].radardistance = recorddistance.radardistance;
-			printf("distance radarproject[%d]:%f \n", i, recorddistance.radardistance);
-			strcpy(dayindir, m_dirs.m_drirs.c_str());
-			int textnum = sizeof(m_dirs.m_drirs);
-			sprintf(prezifu, "点:%d", i + 1);
-			//strcpy(dayindir+textnum, prezifu);
-			strcat(dayindir, "----->");
-			strcat(dayindir, prezifu);
-			putText::putTextZH(xiezitu, dayindir, cv::Point(100, 100 + i * 50), cv::Scalar(255, 0, 0), 30, "微软雅黑");
-			//cv::putText(xiezitu, dayindir, cv::Point(100, 100 + i * 50), 0, 1, cv::Scalar(255, 0, 0), 3);
+			recorddistance.pixeldistance = sqrt(pow((validPoints[i].x - boxPoints[i].x), 2) + pow((validPoints[i].y - boxPoints[i].y), 2));
+
+			error_means.push_back(recorddistance);
+			printf("distancepixle[%d]:%f \n", i, recorddistance.pixeldistance);
 		}
+		putText::putTextZH(hints, "红色点是原始雷达值反投影的值", cv::Point(100, 200), cv::Scalar(0, 0, 255), 40, "隶书");
 
-		putText::putTextZH(hints, "棕色是雷达值投影到图像的值", cv::Point(100, 300), cv::Scalar(0, 0, 100), 40, "隶书");
 
-		if ((float)Nonbiasnum/(float)boxPoints.size() > 0.2)
+}
+
+if (strcmp("MEC",mode.c_str())==0)
+{
+#if  project2pixeltest 
+
+	// 雷达反投影,应该也要先乘以雷达的逆矩阵
+	//  雷达坐标系返回的点是左正右负, 反投影雷达要加高度z，记住
+	std::vector<cv::Point2d> radarprojectpixle;
+	for (; iter_begin != iter_end; iter_begin++)
+	{
+		cv::Point3d radartmp;
+		radartmp.x = iter_begin->second.x;
+		radartmp.y = iter_begin->second.y;
+		radartmp.z = iter_begin->second.z;
+		cv::Point2d radpixe;
+
+		longandlat gpsresult;
+		GpsWorldCoord radar_input, radarworld;
+		radar_input.X = radartmp.x;
+		radar_input.Y = radartmp.y;
+		// input distance 有可能要修改
+		radar_input.Distance = 0;
+		// 反算雷达到gps
+		m_Calibrations.radarworld2Gps(radar_input, gpsresult);
+		printf("GPS:[%3.8f,%3.8f] \n", gpsresult.longtitude, gpsresult.latitude);
+		printf("GPS:[%3.8f,%3.8f] \n", gpsresult.longtitude, gpsresult.latitude);
+		printf("GPS:[%3.8f,%3.8f] \n", gpsresult.longtitude, gpsresult.latitude);
+
+		// 其实是为了得到雷达的Z，这绕了一步
+		m_Calibrations.Gps2radarworld(gpsresult, radarworld);
+
+		UcitCalibrate::WorldDistance radardistance;
+		radardistance.X = radarworld.X;
+		radardistance.Y = radarworld.Y;
+		radardistance.Height = radarworld.Distance;
+
+		m_Calibrations.Distance312Pixel(radardistance, radpixe);
+		cv::circle(sourceImage, radpixe, 8, cv::Scalar(0, 0, 100), -1, cv::LINE_8);
+		radarprojectpixle.push_back(radpixe);
+
+	}
+
+	char dayindir[256];
+	char prezifu[50];
+	//计算与真值的偏差
+	int Nonbiasnum = 0;
+	for (int i = 0; i < boxPoints.size(); i++)
+	{
+		dircs m_dirs = judgedirection(radarprojectpixle[i], boxPoints[i], 110);
+		if (strcmp(m_dirs.m_drirs.c_str(), "雷达返投点位不偏") != 0)
 		{
-			putText::putTextZH(xiezitu, "雷达返投过多的偏离点，需要重新采点",\
-				cv::Point(10, 700),\
-				cv::Scalar(0, 0, 255), 30, \
-				"微软雅黑");
-			putText::putTextZH(xiezitu, ",具体看下图提示，同时采集相应的gps值", \
-				cv::Point(10, 800), \
-				cv::Scalar(0, 0, 255), 30, \
-				"微软雅黑");
-			//cv::putText(xiezitu, "Too much Nonbias points", cv::Point(100,700), 0, 1.5, cv::Scalar(255, 0, 0), 3);
+			Nonbiasnum++;
+		}
+		recorddistance.radardistance = sqrt(pow((radarprojectpixle[i].x - boxPoints[i].x), 2) + pow((radarprojectpixle[i].y - boxPoints[i].y), 2));
+		error_means[i].radardistance = recorddistance.radardistance;
+		printf("distance radarproject[%d]:%f \n", i, recorddistance.radardistance);
+		strcpy(dayindir, m_dirs.m_drirs.c_str());
+		int textnum = sizeof(m_dirs.m_drirs);
+		sprintf(prezifu, "点:%d", i + 1);
+		//strcpy(dayindir+textnum, prezifu);
+		strcat(dayindir, "----->");
+		strcat(dayindir, prezifu);
+		putText::putTextZH(xiezitu, dayindir, cv::Point(100, 100 + i * 50), cv::Scalar(255, 0, 0), 30, "微软雅黑");
+		//cv::putText(xiezitu, dayindir, cv::Point(100, 100 + i * 50), 0, 1, cv::Scalar(255, 0, 0), 3);
+	}
+
+	putText::putTextZH(hints, "棕色是雷达值投影到图像的值", cv::Point(100, 300), cv::Scalar(0, 0, 100), 40, "隶书");
+
+	if ((float)Nonbiasnum / (float)boxPoints.size() > 0.2)
+	{
+		putText::putTextZH(xiezitu, "雷达返投过多的偏离点，需要重新采点", \
+			cv::Point(10, 700), \
+			cv::Scalar(0, 0, 255), 30, \
+			"微软雅黑");
+		putText::putTextZH(xiezitu, ",具体看下图提示，同时采集相应的gps值", \
+			cv::Point(10, 800), \
+			cv::Scalar(0, 0, 255), 30, \
+			"微软雅黑");
+		//cv::putText(xiezitu, "Too much Nonbias points", cv::Point(100,700), 0, 1.5, cv::Scalar(255, 0, 0), 3);
+	}
+	else
+	{
+		putText::putTextZH(xiezitu, "雷达基本满足标定要求，点的偏移个数在接受范围内", \
+			cv::Point(10, 700), \
+			cv::Scalar(255, 0, 0), 30, \
+			"微软雅黑");
+		putText::putTextZH(xiezitu, "，下面具体查看3组数据整体偏差图", \
+			cv::Point(10, 800), \
+			cv::Scalar(255, 0, 0), 30, \
+			"微软雅黑");
+	}
+	cv::namedWindow("debugoffset", 0);
+	cv::imshow("debugoffset", xiezitu);
+
+	cv::waitKey(0);
+	cv::destroyWindow("debugoffset");
+
+#endif
+
+
+}
+	
+	
+
+
+if (strcmp("MEC", mode.c_str()) == 0)
+{
+	// 反投影为了验证 gps到pixel 显示
+#if project2pixeltest
+	std::vector<cv::Point2d> gpsprojects;
+	//测试之前采的rtk  gps绝对坐标准不准,GPS反投影,绿色点
+	for (int i = 1; i < mp_Gpslat.size() + 1; i++)
+	{
+		GpsWorldCoord  m_gps;
+		longandlat m_longandtemp;
+		m_longandtemp.longtitude = mp_Gpslong[i];
+		m_longandtemp.latitude = mp_Gpslat[i];
+
+		m_Calibrations.Gps2radarworld(m_longandtemp, m_gps);
+		cv::Point3d radartemp;
+		radartemp.x = m_gps.X;
+		radartemp.y = m_gps.Y;
+		radartemp.z = m_gps.Distance;
+		cv::Point2d radpixell;
+		UcitCalibrate::WorldDistance worldDistance;
+		worldDistance.X = radartemp.x;
+		worldDistance.Y = radartemp.y;
+		worldDistance.Height = radartemp.z;
+		m_Calibrations.Distance312Pixel(worldDistance, radpixell);
+		std::string raders = "radarPoints";
+		sprintf(textbuf, "GPS%d[%3.8f,%3.8f]", i, m_longandtemp.longtitude, m_longandtemp.latitude);
+		//putText(sourceImage, textbuf, cv::Point((int)radpixell.x - 100, (int)radpixell.y - 30), 0, 1, cv::Scalar(0, 0, 0), 2);
+		std::cout << "GPS:\t" << i << "'s pixels:" << radpixell.x << "\t" << radpixell.y << endl;
+		cv::circle(sourceImage, radpixell, 7, cv::Scalar(0, 255, 0), -1, cv::LINE_AA);
+		gpsprojects.push_back(radpixell);
+	}
+
+	for (int i = 0; i < boxPoints.size(); i++)
+	{
+		recorddistance.gpsdistance = sqrt(pow((gpsprojects[i].x - boxPoints[i].x), 2) + pow((gpsprojects[i].y - boxPoints[i].y), 2));
+		error_means[i].gpsdistance = recorddistance.gpsdistance;
+		printf("distance GPSproject[%d]:%f \n", i, recorddistance.gpsdistance);
+	}
+
+	putText::putTextZH(hints, "绿色是GPS投影到图像的值", cv::Point(100, 400), cv::Scalar(0, 255, 0), 40, "隶书");
+	// sum up overall errors 
+	std::map<string, double> anverage_distance;
+	vector<meandistance>::iterator iter_mean_b = error_means.begin();
+	vector<meandistance>::iterator iter_mean_e = error_means.end();
+	int counts = 1;
+	char strpoint[256];
+	for (; iter_mean_b != iter_mean_e; iter_mean_b++)
+	{
+		double anveragedistance = (iter_mean_b->pixeldistance + iter_mean_b->radardistance + iter_mean_b->gpsdistance) / 3;
+		sprintf(strpoint, "Point:%d", counts);
+		anverage_distance.insert(make_pair(strpoint, anveragedistance));
+		counts++;
+	}
+
+
+	// 将误差结果排序
+	vector<PAIR> name_score_vec(anverage_distance.begin(), anverage_distance.end());
+	//对vector排序  
+	sort(name_score_vec.begin(), name_score_vec.end(), cmpsort());
+
+	//排序前  
+	map<string, double>::iterator iter_map;
+	cout << "排序前:" << endl;
+	for (iter_map = anverage_distance.begin(); iter_map != anverage_distance.end(); iter_map++)
+		cout << iter_map->first << "\t" << iter_map->second << endl;
+
+
+	char resultsdrawing[256];
+	cout << "排序后:" << endl;
+	for (int i = 0; i != name_score_vec.size(); ++i) {
+		//可在此对按value排完序之后进行操作  
+		cout << name_score_vec[i].first << "\t" << name_score_vec[i].second << endl;
+
+		std::ostringstream stream;
+		stream << name_score_vec[i].first;
+		// 补充一个空格
+		stream << setw(10) << setfill(' ');
+		stream << name_score_vec[i].second;
+		std::string display = stream.str();
+		if (name_score_vec[i].second > 100)
+		{
+			cv::putText(sourceImage, display, cv::Point(50, 200 + i * 50), 0, 1.6, cv::Scalar(0, 0, 255), 3);
+			putText::putTextZH(sourceImage, "误差太大", cv::Point(600, 150 + i * 50), cv::Scalar(0, 200, 255), 40, "微软雅黑");
 		}
 		else
 		{
-			putText::putTextZH(xiezitu, "雷达基本满足标定要求，点的偏移个数在接受范围内", \
-				cv::Point(10, 700), \
-				cv::Scalar(255, 0, 0), 30, \
-				"微软雅黑");
-			putText::putTextZH(xiezitu, "，下面具体查看3组数据整体偏差图", \
-				cv::Point(10, 800), \
-				cv::Scalar(255, 0, 0), 30, \
-				"微软雅黑");
+			cv::putText(sourceImage, display, cv::Point(50, 200 + i * 50), 0, 1.5, cv::Scalar(100, 255, 0), 3);
 		}
-		cv::namedWindow("debugoffset", 0);
-		cv::imshow("debugoffset", xiezitu);
-		
-		cv::waitKey(0);
-		cv::destroyWindow("debugoffset");
-
+	}
 #endif
-
-		
-
-
-		// 测试航向角,正北为X正，东为世界的Y正 ：假如往西南方向跑
-		RadarSpeed m_raderspeed;
-		m_raderspeed.vx = -0.001429;
-		m_raderspeed.vy = 0.001120;
-		m_raderspeed.vz = 0;
-		RadarHeading m_heads;
-		m_Calibrations.RadarSpeedHeading(m_raderspeed,m_heads);
-
-		printf("heading infor<<<<<<<<>>>>>>>>>>>>>>>>>>> \n");
-		printf("heading infor<<<<<<<<>>>>>>>>>>>>>>>>>>> \n");
-		printf("heading infor<<<<<<<<>>>>>>>>>>>>>>>>>>> \n");
-		printf("heading infor<<<<<<<<>>>>>>>>>>>>>>>>>>> \n");
-		printf("heading %s \n", m_heads.direction.c_str());
-		printf("heading V:%f \n", m_heads.speed_value);
-		printf("heading theta:%f \n", m_heads.theta);
-		printf("heading infor<<<<<<<<>>>>>>>>>>>>>>>>>>> \n");
-		printf("heading infor<<<<<<<<>>>>>>>>>>>>>>>>>>> \n");
-		printf("heading infor<<<<<<<<>>>>>>>>>>>>>>>>>>> \n");
-		printf("heading infor<<<<<<<<>>>>>>>>>>>>>>>>>>> \n");
-		printf("heading infor<<<<<<<<>>>>>>>>>>>>>>>>>>> \n");
-		printf("heading infor<<<<<<<<>>>>>>>>>>>>>>>>>>> \n");
-		printf("heading infor<<<<<<<<>>>>>>>>>>>>>>>>>>> \n");
-		printf("heading infor<<<<<<<<>>>>>>>>>>>>>>>>>>> \n");
-
-#if project2pixeltest
-		std::vector<cv::Point2d> gpsprojects;
-		//测试之前采的rtk  gps绝对坐标准不准,GPS反投影,绿色点
-		for (int i=1; i < mp_Gpslat.size()+1; i++)
-		{
-			GpsWorldCoord  m_gps;
-			longandlat m_longandtemp;
-			m_longandtemp.longtitude = mp_Gpslong[i];
-			m_longandtemp.latitude = mp_Gpslat[i];
-
-			m_Calibrations.Gps2radarworld(m_longandtemp, m_gps);
-			cv::Point3d radartemp;
-			radartemp.x = m_gps.X;
-			radartemp.y = m_gps.Y;
-			radartemp.z = m_gps.Distance;
-			cv::Point2d radpixell;
-			UcitCalibrate::WorldDistance worldDistance;
-			worldDistance.X = radartemp.x;
-			worldDistance.Y = radartemp.y;
-			worldDistance.Height = radartemp.z;
-			m_Calibrations.Distance312Pixel(worldDistance, radpixell);
-			std::string raders = "radarPoints";
-			sprintf(textbuf, "GPS%d[%3.8f,%3.8f]",i, m_longandtemp.longtitude, m_longandtemp.latitude);
-			//putText(sourceImage, textbuf, cv::Point((int)radpixell.x - 100, (int)radpixell.y - 30), 0, 1, cv::Scalar(0, 0, 0), 2);
-			cout << "GPS:\t"<< i <<"'s pixels:"<< radpixell.x << "\t" << radpixell.y << endl;
-			circle(sourceImage, radpixell, 7, cv::Scalar(0, 255, 0), -1, cv::LINE_AA);
-			gpsprojects.push_back(radpixell);
-		}
-
-		for (int i = 0; i < boxPoints.size(); i++)
-		{
-			recorddistance.gpsdistance = sqrt(pow((gpsprojects[i].x - boxPoints[i].x), 2) + pow((gpsprojects[i].y - boxPoints[i].y), 2));
-			error_means[i].gpsdistance = recorddistance.gpsdistance;
-			printf("distance GPSproject[%d]:%f \n", i, recorddistance.gpsdistance);
-		}
-
-		putText::putTextZH(hints, "绿色是GPS投影到图像的值", cv::Point(100, 400), cv::Scalar(0, 255, 0), 40, "隶书");
-		// sum up overall errors 
-		std::map<string, double> anverage_distance;
-		vector<meandistance>::iterator iter_mean_b = error_means.begin();
-		vector<meandistance>::iterator iter_mean_e = error_means.end();
-		int counts = 1;
-		char strpoint[256];
-		for (; iter_mean_b!=iter_mean_e;iter_mean_b++)
-		{
-			double anveragedistance = (iter_mean_b->pixeldistance + iter_mean_b->radardistance + iter_mean_b->gpsdistance) / 3;
-			sprintf(strpoint, "Point:%d", counts);
-			anverage_distance.insert(make_pair(strpoint, anveragedistance));
-			counts++;
-		}
+}
 
 
-		// 将误差结果排序
-		vector<PAIR> name_score_vec(anverage_distance.begin(), anverage_distance.end());
-		//对vector排序  
-		sort(name_score_vec.begin(), name_score_vec.end(), cmpsort());
 
-		//排序前  
-		map<string, double>::iterator iter_map;
-		cout << "排序前:" << endl;
-		for (iter_map = anverage_distance.begin(); iter_map != anverage_distance.end(); iter_map++)
-			cout << iter_map->first <<"\t"<< iter_map->second << endl;
-
-
-		char resultsdrawing[256];
-		cout << "排序后:" << endl;
-		for (int i = 0; i != name_score_vec.size(); ++i) {
-			//可在此对按value排完序之后进行操作  
-			cout << name_score_vec[i].first << "\t"<< name_score_vec[i].second << endl;
-
-			std::ostringstream stream;
-			stream << name_score_vec[i].first;
-			// 补充一个空格
-			stream << setw(10) << setfill(' ');
-			stream << name_score_vec[i].second;
-			std::string display =stream.str();
-			if (name_score_vec[i].second > 100)
-			{
-				cv::putText(sourceImage, display, cv::Point(50, 200 + i * 50), 0, 1.6, cv::Scalar(0, 0, 255), 3);
-				putText::putTextZH(sourceImage, "误差太大", cv::Point(600, 150 + i * 50), cv::Scalar(0, 200, 255), 40,"微软雅黑");
-			}
-			else
-			{
-				cv::putText(sourceImage, display, cv::Point(50, 200 + i * 50), 0, 1.5, cv::Scalar(100, 255, 0), 3);
-			}
-		}	
-#endif
+if (strcmp("MEC",mode.c_str())==0)
+{
+	#define project2gpstest 1
+}
+else
+{
+	#define project2gpstest 0
+}
 
 #if project2gpstest
 
@@ -1331,7 +1131,7 @@ int main()
 
 #endif
 
-#if 1
+#if 0
 		cv::Point2d  m_Distancepixel;
 		// 计算边界值，y = 0的对应的区域
 		cv::Point2d raderpixelPoints, point1, pointend;

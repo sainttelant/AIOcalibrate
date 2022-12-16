@@ -1004,12 +1004,34 @@ namespace UcitCalibrate
 		}
 	}
 
-	void CalibrationTool::PickMeasureMentValue4RadarRT(std::vector<unsigned int> pointsSet, std::map<int, cv::Point3d>& measurements)
+	void CalibrationTool::PickRadarMeasure4MECcalibRadarRT(std::vector<unsigned int> pointsSet, \
+		std::map<int, cv::Point3d>& measurements)
 	{
 		if (pointsSet.empty())
 		{
 			return;
 		}
+
+		radarmeasure_pick4radarRT.clear();
+		std::map<int, cv::Point3d>::iterator iter = measurements.begin();
+		for (int i = 0; i < pointsSet.size(); i++)
+		{
+			iter = measurements.find(pointsSet[i]);
+			if (iter != measurements.end())
+			{
+				printf("Pick the Point[%d] for calibration, be attention!! \n", pointsSet[i]);
+				radarmeasure_pick4radarRT.push_back(iter->second);
+			}
+		}
+	}
+
+	void CalibrationTool::PickMeasureMentValue4AIOcalib(std::vector<unsigned int> pointsSet, std::map<int, cv::Point3d>& measurements)
+	{
+		if (pointsSet.empty())
+		{
+			return;
+		}
+
 		measures_pick.clear();
 		std::map<int, cv::Point3d>::iterator iter	= measurements.begin();
 		for (int i = 0; i < pointsSet.size(); i++)
@@ -1238,8 +1260,34 @@ namespace UcitCalibrate
 
 	std::vector<cv::Point3d> CalibrationTool::GetMeasureMentPoint()
 	{
-		return measures_pick;
+		return radarmeasure_pick4radarRT;
 	}
+
+	void CalibrationTool::AIOcamerapixel2Radar(cv::Point2d m_pixels, AIOradarCoord& Radarvalue)
+	{
+		double s;
+		/////////////////////2D to 3D///////////////////////
+		cv::Mat imagepixel = cv::Mat::ones(3, 1, cv::DataType<double>::type); //u,v,1
+		imagepixel.at<double>(0, 0) = m_pixels.x;
+		imagepixel.at<double>(1, 0) = m_pixels.y;
+		// 内参矩阵的逆乘以像素坐标变成相机坐标系
+		cv::Mat tempMat = m_cameraRMatrix33.inv() * m_cameraintrisic.inv() * imagepixel;
+		cv::Mat tempMat2 = m_cameraRMatrix33.inv() * m_cameraTMatrix;
+		double tmp2 = tempMat2.at<double>(2, 0);
+		double tmp = tempMat.at<double>(2, 0);
+
+		s = m_radarheight + tmp2;
+		s /= tmp;
+		//cout << "s : " << s << endl;
+
+		cv::Mat camera_cordinates = -m_cameraRMatrix33.inv() * m_cameraTMatrix;
+		cv::Mat wcPoint = m_cameraRMatrix33.inv() * (m_cameraintrisic.inv() * s * imagepixel - m_cameraTMatrix);
+		Radarvalue.X = wcPoint.at<double>(0, 0);
+		Radarvalue.Y = wcPoint.at<double>(1, 0);
+		Radarvalue.Z = wcPoint.at<double>(2, 0);
+
+	}
+
 
 	void CalibrationTool::CameraPixel2World(cv::Point2d m_pixels, cv::Point3d& m_world)
 	{
@@ -1267,7 +1315,7 @@ namespace UcitCalibrate
 		//cout << "Pixel2World :" << wcPoint << endl;
 	}
 
-	void CalibrationTool::CalibrateCamera(bool rasac, bool useRTK, std::vector<unsigned int> pickPoints)
+	void CalibrationTool::CalibrateCamera(bool rasac, std::string &mode, std::vector<unsigned int> pickPoints)
 	{
 		cv::Mat rvec1(3, 1, cv::DataType<double>::type);  //旋转向量
 		cv::Mat tvec1(3, 1, cv::DataType<double>::type);  //平移向量
@@ -1275,7 +1323,7 @@ namespace UcitCalibrate
 		m_cameraTMatrix = cv::Mat::zeros(3, 1, cv::DataType<double>::type);
 		m_cameraRMatrix33 = cv::Mat::zeros(3, 3, cv::DataType<double>::type);
 		//调用 pnp solve 函数
-		if (useRTK)
+		if (strcmp("MEC",mode.c_str())==0)
 		{
 			if (rasac)
 			{
@@ -1296,8 +1344,9 @@ namespace UcitCalibrate
 				}
 			}
 		}
-		else
+		else if(strcmp("AIO", mode.c_str())==0)
 		{
+			// 直接标定雷达和相机的矩阵关系
 			if (rasac)
 			{
 				cv::solvePnPRansac(measures_pick, imagePixel_pick, m_cameraintrisic, m_cameradiff, m_cameraRMatrix, \
@@ -1317,10 +1366,20 @@ namespace UcitCalibrate
 				}
 			}
 		}
+		else
+		{
+			printf("Mode input errors, it shouldn't be occurred! \n");
+			return;
+		}
 		cv::Rodrigues(m_cameraRMatrix, m_cameraRMatrix33);
 		cout << "rotate33:" << m_cameraRMatrix33 << endl;
 		hconcat(m_cameraRMatrix33, m_cameraTMatrix, m_cameraRTMatrix44);
-		CalculateBlind();
+		if (strcmp("MEC", mode.c_str()) == 0)
+		{
+				CalculateBlind();
+		}
+		
+	
 	}
 
 	void CalibrationTool::Pixel2Distance31(cv::Point2d pixels, WorldDistance &Distances)
@@ -1381,15 +1440,42 @@ namespace UcitCalibrate
 		pixels.x = D_Points.at<double>(0, 0);
 		pixels.y = D_Points.at<double>(1, 0);
 
-		pixels.x = pixels.x;
-		pixels.y = pixels.y;
-
-		pixels.x = pixels.x;
-		pixels.y = pixels.y;
-
-
-
 	}
+
+	void CalibrationTool::AIORadar2camerapixel(AIOradarCoord Radarvalue, cv::Point2d& m_pixels)
+	{
+		cv::Mat world_point = cv::Mat::ones(4, 1, cv::DataType<double>::type);
+		cv::Mat imagetmp = cv::Mat::ones(3, 1, cv::DataType<double>::type);
+		world_point.at<double>(0, 0) = Radarvalue.X;
+		world_point.at<double>(1, 0) = Radarvalue.Y;
+		world_point.at<double>(2, 0) = Radarvalue.Z;
+	
+		// 其实m_cameraRTMatrix44 是3*4的
+
+		if (m_cameraRTMatrix44.rows == 4)
+		{
+			cv::Mat dst;
+			int a = 3;
+			for (int i = 0; i < m_cameraRTMatrix44.rows; i++)
+			{
+				if (i != a) //第i行不是需要删除的
+				{
+					dst.push_back(m_cameraRTMatrix44.row(i)); //把message的第i行加到dst矩阵的后面
+				}
+			}
+			m_cameraRTMatrix44 = dst.clone();
+		}
+		imagetmp = m_cameraintrisic * m_cameraRTMatrix44 * world_point;
+		//    std::cout << "RTMatrix:" << m_cameraRTMatrix44 << std::endl;
+		//	std::cout<<"RT_"<<RT_<<std::endl;
+			//image_points = m_Calibrations.m_cameraintrisic * RT_ * RadarPoint;
+		cv::Mat D_Points = cv::Mat::ones(3, 1, cv::DataType<double>::type);
+		D_Points.at<double>(0, 0) = imagetmp.at<double>(0, 0) / imagetmp.at<double>(2, 0);
+		D_Points.at<double>(1, 0) = imagetmp.at<double>(1, 0) / imagetmp.at<double>(2, 0);
+		m_pixels.x = D_Points.at<double>(0, 0);
+		m_pixels.y = D_Points.at<double>(1, 0);
+	}
+
 
 	void CalibrationTool::Distance312Pixel(WorldDistance Distances, cv::Point2d& pixels)
   {
@@ -1427,11 +1513,6 @@ namespace UcitCalibrate
     pixels.x = D_Points.at<double>(0, 0);
     pixels.y = D_Points.at<double>(1, 0);
 
-
-
-    //std::string raders = "radarPoints";
-    //std::cout << "Pixel_2D_X:\t" << pixels.x << "\t" << "Pixel_2D_Y:\t" << pixels.y << std::endl;
-    //circle(sourceImage, raderpixelPoints, 10, Scalar(200, 0, 255), -1, LINE_AA);
   }
 }
 
