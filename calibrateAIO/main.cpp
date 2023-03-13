@@ -159,19 +159,29 @@ int writeXmlFile(cv::Mat *raderRT44,
 	placeElement->LinkEndChild(placetext);
 
 	// 雷达rt矩阵写入
-	TiXmlElement* RadElement = new TiXmlElement("radarRT44");
-	RootElement->LinkEndChild(RadElement);
-	for (int r = 0; r < raderRT44->rows; r++)
+	if (raderRT44->empty())
 	{
-		for (int c = 0; c < raderRT44->cols; c++)
+		printf("radarrt44 is empty,and not create radarRT44 xml \n");
+	}
+	else
+
+	{
+		TiXmlElement* RadElement = new TiXmlElement("radarRT44");
+		RootElement->LinkEndChild(RadElement);
+		for (int r = 0; r < raderRT44->rows; r++)
 		{
-			TiXmlElement* index = new TiXmlElement("index");
-			RadElement->LinkEndChild(index);
-			std::string valuestring = dou2str(raderRT44->at<double>(r, c));
-			TiXmlText* value = new TiXmlText(valuestring.c_str());
-			index->LinkEndChild(value);
+			for (int c = 0; c < raderRT44->cols; c++)
+			{
+				TiXmlElement* index = new TiXmlElement("index");
+				RadElement->LinkEndChild(index);
+				std::string valuestring = dou2str(raderRT44->at<double>(r, c));
+				TiXmlText* value = new TiXmlText(valuestring.c_str());
+				index->LinkEndChild(value);
+			}
 		}
 	}
+
+
 	// 摄像头rt矩阵写入
 	TiXmlElement* CameraElement = new TiXmlElement("cameraRT44");
 	RootElement->LinkEndChild(CameraElement);
@@ -350,8 +360,6 @@ int main(int argc, char ** argv)
 		mode = argv[i];
 	}
 	printf("mode is %s \n", mode.c_str());
-
-
 	////// 首先通过标定板的图像像素坐标以及对应的世界坐标，通过PnP求解相机的R&T//////
 	// 准备的是图像上的像素点
 	// 创建输出参数文件，ios：：trunc含义是有文件先删除
