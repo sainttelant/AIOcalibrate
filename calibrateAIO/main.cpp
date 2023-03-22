@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <map>
 #include"puttext.h"
+#include<iostream>
+#include<filesystem>
 
 using namespace LOF;
 //using namespace matplot;
@@ -44,6 +46,9 @@ struct dircs
 	pixelDirection e_dirs;
 	std::string m_drirs;
 };
+
+namespace fs = std::filesystem;
+
 
 dircs judgedirection(cv::Point2d& srcpoint, cv::Point2d& basepoint, double threashold)
 {
@@ -137,7 +142,8 @@ int writeXmlFile(cv::Mat *raderRT44,
 	cv::Mat *camerainstrinic,
 	double handheight,
 	double radarinstallheight,
-	std::string place)
+	std::string place,
+	const char * file)
 {
 	if (raderRT44==nullptr || cameraRT44==nullptr)
 	{
@@ -338,7 +344,7 @@ int writeXmlFile(cv::Mat *raderRT44,
 	heightrader->LinkEndChild(isntallvalues);
 
 
-		writeDoc->SaveFile("../results/calibration.xml");
+		writeDoc->SaveFile(file);
 		delete writeDoc;
 		return 1;
 }
@@ -348,18 +354,31 @@ int main(int argc, char ** argv)
 {
 	// 命令行输入
 
-	if (argc < 2)
+	if (argc < 5)
 	{
 		std::cout << "please input the mode of calibrate! for MEC or AIO" << std::endl;
+		printf("please input the mode, tupianpath, xmlfile, savepath respectively \n");
 		return 0;
 	}
 
 	std::string mode = "";
-	for (int  i = 0; i < argc; i++)
-	{
-		mode = argv[i];
-	}
+	
+	mode = argv[1];
+	
 	printf("mode is %s \n", mode.c_str());
+
+	std::string savepath = argv[4];
+	
+
+	if (!fs::is_directory(savepath)) {
+		fs::create_directories(savepath);
+	}
+	else {
+		std::cout << "文件夹已存在" << std::endl;
+	}
+
+	
+
 	////// 首先通过标定板的图像像素坐标以及对应的世界坐标，通过PnP求解相机的R&T//////
 	// 准备的是图像上的像素点
 	// 创建输出参数文件，ios：：trunc含义是有文件先删除
@@ -369,7 +388,8 @@ int main(int argc, char ** argv)
 	ofstream gpsfile("../results/gpsGenerator.txt", ios::trunc);
 
 
-	std::string m_xmlpath = "../data/input.xml";   //原来的标定
+	std::string m_xmlpath = "";   //原来的标定
+	m_xmlpath = argv[3];
 	
 	// 基于当前系统的当前日期/时间
 	time_t now = time(0);
@@ -484,7 +504,8 @@ int main(int argc, char ** argv)
 	m_Calibrations.PickImagePixelPoints4PnPsolve(pickPointindex, mp_images);
 
 	// Step one Loading image
-	cv::Mat sourceImage = cv::imread("../data/1.bmp");
+	std::string tupath = argv[2];
+	cv::Mat sourceImage = cv::imread(tupath);
 
 	cv::Mat xiezitu(cv::Size(800, 1440),CV_8UC3);
     // 写字
@@ -651,6 +672,8 @@ int main(int argc, char ** argv)
 		cv::Mat tmpRadarRT = CalibrationTool::getInstance().GetRadarRTMatrix();
 		cv::Mat tmpCameraRT = CalibrationTool::getInstance().GetCameraRT44Matrix();
 		
+		std::string files = savepath + "/" + "calibration.xml";
+
 		int flag = writeXmlFile(&tmpRadarRT, \
 			& tmpCameraRT, &m_Calibrations.m_cameraRMatrix33, \
 			& m_Calibrations.m_cameraTMatrix, \
@@ -660,7 +683,8 @@ int main(int argc, char ** argv)
 			&camrainst,\
 			reflectorheight,\
 			raderheight,\
-			calibrateplace);
+			calibrateplace,\
+			files.c_str());
 
 
 
@@ -1173,9 +1197,9 @@ else
 
 #endif
 		
-	
+	std::string savep = savepath + "/" + "save.jpg";
 	cv::imshow("hints", hints);
-	cv::imwrite("../results/save.jpg", sourceImage);
+	cv::imwrite(savep, sourceImage);
 	cv::imshow("raw image", sourceImage);
 	cv::waitKey(0);
 	cv::destroyAllWindows();
